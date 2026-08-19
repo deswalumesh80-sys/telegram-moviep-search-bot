@@ -1,8 +1,8 @@
+import os
 import asyncio
 import urllib.parse
-from bs4 import BeautifulSoup
-import aiohttp
 from aiohttp import web
+import aiohttp
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import config
@@ -14,7 +14,7 @@ app = Client(
     bot_token=config.BOT_TOKEN
 )
 
-# Render Port Binding Check
+# Render Port Binding Web Server
 routes = web.RouteTableDef()
 
 @routes.get("/", allow_head=True)
@@ -26,14 +26,49 @@ async def web_server():
     web_app.add_routes(routes)
     return web_app
 
-# Start Command Handler
+# Start Command
 @app.on_message(filters.command("start"))
 async def start_handler(client, message):
+    user_name = message.from_user.first_name if message.from_user else "Dost"
     await message.reply_text(
-        f"Namaste {message.from_user.first_name}!\n\n"
-        "Main Live Movie Finder Bot hoon. Mujhe kisi bhi Movie ya Web Series ka naam bhejein, main direct web server se download links nikal kar dunga."
+        f"Namaste {user_name}!\n\n"
+        "Main Live Movie Search Bot hoon. 🎬\n\n"
+        "Mujhe kisi bhi Movie ya Web Series ka naam bhejein, main aapko direct online watch & download links dunga!"
     )
 
+# Movie Search Handler
+@app.on_message(filters.text & filters.private & ~filters.command(["start", "help"]))
+async def movie_search_handler(client, message):
+    query = message.text.strip()
+    encoded = urllib.parse.quote_plus(query)
+    
+    # Direct Movie Servers & Stream Providers
+    buttons = [
+        [InlineKeyboardButton("🌐 Server 1 (Vega Stream/DL)", url=f"https://google.com/search?q=site:vegamovies.im+{encoded}+download")],
+        [InlineKeyboardButton("⚡ Server 2 (MoviesMod HD)", url=f"https://google.com/search?q=site:moviesmod.day+{encoded}+download")],
+        [InlineKeyboardButton("🍿 Server 3 (Direct Watch/DL)", url=f"https://www.google.com/search?q=watch+{encoded}+online+free")]
+    ]
+    
+    await message.reply_text(
+        f"🎬 **Results found for:** `{query}`\n\n"
+        "Neeche diye gaye kisi bhi server link par click karke movie download ya watch karein:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+async def main():
+    await app.start()
+    print("Bot is started!")
+    
+    app_runner = web.AppRunner(await web_server())
+    await app_runner.setup()
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(app_runner, "0.0.0.0", port)
+    await site.start()
+    
+    await asyncio.Event().wait()
+
+if __name__ == "__main__":
+    asyncio.run(main())
 # Live Scraper Engine
 async def search_movies(query):
     encoded_query = urllib.parse.quote_plus(query)
