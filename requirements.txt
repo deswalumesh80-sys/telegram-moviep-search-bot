@@ -1,5 +1,4 @@
 pyrogram==2.0.106
 tgcrypto==1.2.5
 aiohttp==3.9.3
-beautifulsoup4==4.12.3
 requests==2.31.0
